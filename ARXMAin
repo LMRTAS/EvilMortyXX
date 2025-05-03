@@ -1,0 +1,1334 @@
+wait(3)
+local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
+local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
+local HttpService = game:GetService("HttpService")
+
+-- สร้าง Window และ Tabs
+local Window = Fluent:CreateWindow({
+    Title = "Anime Rangers X ",
+    SubTitle = "God_BlackHole",
+    TabWidth = 160,
+    Size = UDim2.fromOffset(580, 460),
+    Acrylic = false,
+    Theme = "Darker",
+    MinimizeKey = Enum.KeyCode.LeftControl
+})
+
+local Tabs = {
+    Lobby    = Window:AddTab({ Title = "Lobby",    Icon = "" }),
+    Main     = Window:AddTab({ Title = "Main",     Icon = "" }),
+    Event     = Window:AddTab({ Title = "Event",     Icon = "" }),
+    Stage     = Window:AddTab({ Title = "RengerStage",     Icon = "" }),
+    Summon   = Window:AddTab({ Title = "Summon",   Icon = "" }),
+    Code     = Window:AddTab({ Title = "Code",     Icon = "" }),
+    Settings = Window:AddTab({ Title = "Settings", Icon = "settings" })
+}
+
+-- ===== Lobby Tab =====
+local selectedUpgrade = "YenMaxLevel"
+local upgradeCount    = 2
+
+Tabs.Lobby:AddDropdown("Dropdown", {
+    Title   = "เลือกประเภทที่จะอัปเกรด",
+    Values  = {"YenMaxLevel", "YenGenarateLevel", "BaseHealthLevel"},
+    Multi   = false,
+    Default = 1,
+    Callback = function(Value)
+        selectedUpgrade = Value
+    end
+})
+
+Tabs.Lobby:AddSlider("Slider", {
+    Title       = "จำนวนครั้งที่ต้องการอัปเกรด",
+    Description = "เลือกจำนวนรอบ",
+    Default     = 1,
+    Min         = 1,
+    Max         = 10,
+    Rounding    = 0,
+    Callback    = function(Value)
+        upgradeCount = Value
+    end
+})
+
+Tabs.Lobby:AddToggle("MyToggle", {
+    Title   = "กดยืนยันเพื่อเริ่มอัปเกรด",
+    Default = false
+}):OnChanged(function(state)
+    if state then
+        for i = 1, upgradeCount do
+            game:GetService("ReplicatedStorage").Remote.Server.Gameplay.PlayerStats:FireServer(selectedUpgrade)
+            task.wait(0.2)
+        end
+    end
+end)
+---------Reroll
+    Tabs.Lobby:AddParagraph({
+        Title = "Reroll; Lock trait And SubTrait ",
+        Content = "Trait Violent,Seraph,Capitalist,Duplicator,Sovereign"
+    })
+-------
+-- ดึงข้อมูล Collection ของผู้เล่นจาก ReplicatedStorage
+local playerName = game:GetService("Players").LocalPlayer.Name
+local playerData = game:GetService("ReplicatedStorage"):WaitForChild("Player_Data"):WaitForChild(playerName):WaitForChild("Collection")
+
+-- ดึงค่าชื่อใน Collection และกรองค่าซ้ำ
+local collectionNames = {}
+local seenNames = {}  -- ใช้ตัวแปรเพื่อเก็บค่าที่เคยพบแล้ว
+
+for _, item in pairs(playerData:GetChildren()) do
+    if not seenNames[item.Name] then  -- ถ้ายังไม่เคยพบชื่อนี้
+        table.insert(collectionNames, item.Name)  -- ใส่ชื่อที่ไม่ซ้ำ
+        seenNames[item.Name] = true  -- บันทึกชื่อที่เจอแล้ว
+    end
+end
+
+-- เพิ่ม Dropdown เพื่อให้ผู้ใช้เลือก
+local Dropdown = Tabs.Lobby:AddDropdown("Dropdown", {
+    Title = "Choose Unit",
+    Values = collectionNames,  -- ใช้ collectionNames ที่ไม่ซ้ำ
+    Multi = false,
+    Default = 1,
+})
+
+local selectedItemName = nil  -- ตัวแปรเก็บชื่อที่เลือกจาก Dropdown
+
+-- เมื่อเลือกชื่อจาก Dropdown
+Dropdown:OnChanged(function(selectedName)
+    selectedItemName = selectedName  -- เก็บชื่อที่เลือกจาก Dropdown
+end)
+Tabs.Lobby:AddButton({
+    Title = "Re Unit",
+
+    Callback = function()
+        -- เคลียร์ข้อมูลเก่า
+        collectionNames = {}
+        seenNames = {}
+
+        -- ดึงข้อมูลใหม่จาก Collection
+        for _, item in pairs(playerData:GetChildren()) do
+            if not seenNames[item.Name] then
+                table.insert(collectionNames, item.Name)
+                seenNames[item.Name] = true
+            end
+        end
+
+        -- รีเฟรช Dropdown ด้วยค่าใหม่
+        Dropdown:SetValues(collectionNames)
+    end
+})
+
+------
+local Toggle = Tabs.Lobby:AddToggle("MyToggle", {Title = "Auto Reroll", Default = false }) 
+
+-- การแสดงข้อความคำอธิบาย
+local Description = "Violent Seraph Capitalist Duplicator Sovereign"
+print("Restricted names: " .. Description)
+
+Toggle:OnChanged(function(state)
+    -- หาก Toggle ถูกเปิด (state เป็น true)
+    if state then
+        -- สร้างฟังก์ชันให้ทำงานเรื่อยๆ
+        while Toggle.Value do
+            wait(1)  -- ตั้งเวลารอระหว่างการสุ่ม, ปรับเวลาตามต้องการ
+
+            -- ตรวจสอบว่าได้เลือกไอเท็มใน Dropdown หรือยัง
+            if selectedItemName then
+                -- ดึงค่าจาก Trait Text ที่คุณต้องการ
+                local traitText = game:GetService("Players").LocalPlayer.PlayerGui.Traits.Main.Base.Main_Trait.Trait.Text
+                local subTraitText = game:GetService("Players").LocalPlayer.PlayerGui.Traits.Main.Base.Sub_Trait.Trait.Text -- เพิ่มส่วนนี้
+
+                local restrictedNames = {
+                    "Violent","Seraph", "Capitalist",
+                    "Duplicator", "Sovereign"
+                }
+
+                local canRandomize = true
+
+                -- ตรวจสอบว่า traitText ตรงกับชื่อใน restrictedNames หรือไม่
+                for _, name in ipairs(restrictedNames) do
+                    if traitText == name or subTraitText == name then -- ตรวจสอบ Sub_Trait ด้วย
+                        canRandomize = false
+                        break
+                    end
+                end
+
+                -- ถ้าไม่สามารถสุ่มได้ (เช่นมีชื่อใน restrictedNames) ให้แสดงข้อความและไม่สุ่ม
+                if canRandomize then
+                    local args = {
+                        [1] = playerData:WaitForChild(selectedItemName),  -- ใช้ชื่อที่เลือกใน Dropdown
+                        [2] = "Reroll",
+                        [3] = "Main",
+                        [4] = "Shards"
+                    }
+
+                    -- ส่งคำขอให้สุ่ม
+                    game:GetService("ReplicatedStorage"):WaitForChild("Remote"):WaitForChild("Server"):WaitForChild("Gambling"):WaitForChild("RerollTrait"):FireServer(unpack(args))
+
+                    -- เพิ่มข้อความแสดงชื่อที่สุ่มมาแล้ว
+                    print("สุ่ม trait ใหม่: " .. traitText)
+                    print("Sub Trait: " .. subTraitText)
+                else
+                    -- ถ้าชื่อไม่สามารถสุ่มได้
+                    print("มีอยู่แล้ว/ได้แล้วสัสสสสส: " .. traitText)
+                    print("ได้อันที่2/ดวงดีไหม: " .. subTraitText)
+                end
+            end
+        end
+    end
+end)
+
+
+--------State
+   Tabs.Lobby:AddParagraph({
+        Title = "State Reroll Lock Tier SS SSS O O- O+",
+        Content = "Lucky Boy if you don't luck you is gay"
+    })
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local player = Players.LocalPlayer
+
+-- เกรดที่ต้องการให้หยุดสุ่ม
+local stopGrades = {
+    ["SS"] = true,
+    ["SSS"] = true,
+    ["O"] = true,
+    ["O-"] = true,
+    ["O+"] = true
+}
+
+-- รายการ Stat ทั้งหมดที่รองรับ
+local statList = { "Damage", "Health", "Speed", "Range", "AttackCooldown" }
+
+-- Table สำหรับเก็บ Toggle
+local toggles = {}
+
+-- สร้าง Toggle แต่ละอัน และฟังก์ชันสุ่มแยก
+for _, statName in ipairs(statList) do
+    -- สร้าง Toggle ในแท็บ Lobby
+    toggles[statName] = Tabs.Lobby:AddToggle(statName .. "Toggle", {
+        Title = "Auto Reroll " .. statName,
+        Default = false
+    })
+
+    -- ฟังก์ชันสุ่มสำหรับแต่ละ Stat
+    local function rerollStat()
+        task.spawn(function()
+            local unit = player:WaitForChild("PlayerGui"):WaitForChild("StatsPotential")
+                :WaitForChild("Main"):WaitForChild("Base"):WaitForChild("Unit")
+            local templateName = unit:GetAttribute("OnTemplateUnit")
+
+            print("ชื่อยูนิต (OnTemplateUnit):", templateName)
+
+            while toggles[statName].Value do
+                local gradeTextLabel
+                pcall(function()
+                    gradeTextLabel = player.PlayerGui.StatsPotential.Main.Base.Grade[statName].Grade
+                end)
+
+                if gradeTextLabel and gradeTextLabel:IsA("TextLabel") then
+                    local currentGrade = gradeTextLabel.Text
+                    print(statName .. " ได้ระดับคือ:", currentGrade)
+
+                    if stopGrades[currentGrade] then
+                        print("✅ เจอเกรดที่ต้องการ (" .. statName .. "):", currentGrade)
+                        break
+                    else
+                        local args = {
+                            statName,
+                            templateName,
+                            "Selective"
+                        }
+
+                        ReplicatedStorage:WaitForChild("Remote"):WaitForChild("Server")
+                            :WaitForChild("Gambling"):WaitForChild("RerollPotential")
+                            :FireServer(unpack(args))
+
+                        print("🔁 ยังไม่ได้เกรดที่ต้องการ (" .. statName .. ") → สุ่มใหม่")
+                    end
+                else
+                    warn("❗ ไม่พบ TextLabel ของ " .. statName)
+                end
+
+                task.wait(0.2)
+            end
+        end)
+    end
+
+    -- กำหนดให้ Toggle แต่ละอันเรียกฟังก์ชันเมื่อเปิด
+    toggles[statName]:OnChanged(function(value)
+        if value then
+            rerollStat()
+        end
+    end)
+end
+
+
+
+
+
+-- ===== Main Tab =====
+local Players          = game:GetService("Players")
+local ReplicatedStorage= game:GetService("ReplicatedStorage")
+local vim              = game:GetService("VirtualInputManager")
+local localPlayer      = Players.LocalPlayer
+local RunService       = game:GetService("RunService")
+
+-- Auto Start
+Tabs.Main:AddToggle("AutoStart", {
+    Title   = "Auto Start",
+    Default = false
+}):OnChanged(function(state)
+wait(2)
+    _G.AutoStart = state
+    if state then
+        task.spawn(function()
+            while _G.AutoStart do
+                local success, err = pcall(function()
+                    ReplicatedStorage.Remote.Server.OnGame.Voting.VotePlaying:FireServer()
+                end)
+                if not success then warn("AutoStart error:", err) end
+                task.wait(3)
+            end
+        end)
+    end
+end)
+
+-- Auto Upgrade All Units
+Tabs.Main:AddToggle("AutoUpgradeAll", {
+    Title   = "Auto Upgrade All unit",
+    Default = false
+}):OnChanged(function(state)
+    _G.AutoUpgradeAll = state
+    if state then
+        task.spawn(function()
+            while _G.AutoUpgradeAll do
+                -- ดึงข้อมูล Player และ UI ScrollingFrame
+local player = game:GetService("Players").LocalPlayer
+local scrollingFrame = player.PlayerGui.HUD.InGame.UnitsManager.Main.Main.ScrollingFrame
+
+-- วนลูปเพื่อดึงข้อมูลยูนิตที่แสดงใน UI
+for _, unitFrame in pairs(scrollingFrame:GetChildren()) do
+    if unitFrame:IsA("TextButton") then
+        local unitName = unitFrame.Name
+        local upgradeText = unitFrame:FindFirstChild("UpgradeText")
+
+        if upgradeText and upgradeText:IsA("TextLabel") then
+            print("ยูนิต:", unitName, "| อัปเกรด:", upgradeText.Text)
+            
+            -- เช็คคำว่า "(MAX)" ในข้อความ
+            if upgradeText.Text:match("%(MAX%)") then
+                print("ไม่สามารถอัปเกรดได้อีกแล้ว:", unitName)
+            end
+        end
+    end
+end
+
+-- ดึงข้อมูล Remote สำหรับการอัปเกรดยูนิต
+local remote = game:GetService("ReplicatedStorage").Remote.Server.Units.Upgrade
+local unitsFolder = player.UnitsFolder  -- โฟลเดอร์ยูนิตของผู้เล่น
+
+-- วนลูปผ่านทุกยูนิตใน UnitsFolder และส่งคำขอไปที่ remote
+for _, unit in pairs(unitsFolder:GetChildren()) do
+    -- พิมพ์ชื่อยูนิต
+    print("กำลังอัปเกรดยูนิต:", unit.Name)
+    
+    -- เช็คว่ามี "(MAX)" ในชื่อของยูนิตก่อนที่จะส่งคำขอ
+    local upgradeText = unit:FindFirstChild("UpgradeText")
+    if upgradeText and upgradeText:IsA("TextLabel") and upgradeText.Text:match("%(MAX%)") then
+        print("ไม่สามารถอัปเกรดได้อีกแล้ว:", unit.Name)
+    else
+        -- ส่งคำขอไปที่ remote เพื่ออัปเกรดยูนิต
+        local arguments = {
+            [1] = unit  -- ใช้ยูนิตที่ชื่อจาก unit.Name
+        }
+
+        -- ส่งคำขอไปที่ remote
+        remote:FireServer(unpack(arguments))
+    end
+end
+
+                if not success then warn("AutoUpgradeAll error:", err) end
+                task.wait(5)
+            end
+        end)
+    end
+end)
+
+-- Auto Upgrade Money
+Tabs.Main:AddToggle("AutoUpgradeMoney", {
+    Title   = "Auto Upgrade Money",
+    Default = false
+}):OnChanged(function(state)
+    _G.AutoUpgradeMoney = state
+    if state then
+        task.spawn(function()
+            while _G.AutoUpgradeMoney do
+                local success, err = pcall(function()
+                    ReplicatedStorage.Remote.Server.Gameplay.StatsManager:FireServer("MaximumYen")
+                end)
+                if not success then warn("AutoUpgradeMoney error:", err) end
+                task.wait(5)
+            end
+        end)
+    end
+end)
+
+	-- Auto Play
+Tabs.Main:AddToggle("AutoPlay", {
+    Title   = "Auto Play",
+    Default = false
+}):OnChanged(function(state)
+    _G.AutoPlay = state  -- Store the state globally
+
+    if state then
+        task.spawn(function()
+            local player = game:GetService("Players").LocalPlayer
+            local playerName = player.Name  
+
+            local replicatedStorage = game:GetService("ReplicatedStorage")
+            local playerData = replicatedStorage:WaitForChild("Player_Data")
+            local collection = playerData:WaitForChild(playerName):WaitForChild("Collection")
+
+            local unitsFolder = player:WaitForChild("UnitsFolder")
+
+            while _G.AutoPlay do  -- Keep running as long as AutoPlay is true
+                for _, unit in pairs(unitsFolder:GetChildren()) do
+                    local unitName = unit.Name  -- or unit.Value if unit name is stored in a Value
+
+                    local unitInstance = collection:FindFirstChild(unitName)
+
+                    if unitInstance then
+                        local args = {
+                            [1] = unitInstance
+                        }
+
+                        replicatedStorage:WaitForChild("Remote"):WaitForChild("Server"):WaitForChild("Units"):WaitForChild("Deployment"):FireServer(unpack(args))
+                    else
+                        warn("ไม่พบ Unit ชื่อ: " .. unitName)
+                    end
+                end
+                task.wait(1)  -- Wait for 1 second before the next iteration
+            end
+        end)
+    else
+        print("Auto Play disabled. Stopping the unit deployment process.")
+    end
+end)
+
+-- Auto Replay
+Tabs.Main:AddToggle("AutoReplay", {
+    Title   = "Auto Replay",
+    Default = false
+}):OnChanged(function(state)
+    _G.AutoReplayEnabled = state
+end)
+
+RunService.Heartbeat:Connect(function()
+    if _G.AutoReplayEnabled then
+        local gameStatus = localPlayer.PlayerGui.RewardsUI.Main.LeftSide.GameStatus
+        if gameStatus and gameStatus:IsA("TextLabel") and gameStatus.Text == "~ DEFEAT" then
+            task.wait(2)
+            local success, err = pcall(function()
+                ReplicatedStorage.Remote.Server.OnGame.Voting.VoteRetry:FireServer()
+            end)
+            if not success then warn("VoteRetry error:", err) end
+            return
+        end
+
+        if localPlayer:FindFirstChild("Summon_Amount") then
+            for i = 1, 7 do
+                pcall(function()
+                    vim:SendMouseButtonEvent(0,0,0,true,game,0)
+                    vim:SendMouseButtonEvent(0,0,0,false,game,0)
+                end)
+                task.wait(0.5)
+            end
+            task.wait(0.1)
+            pcall(function()
+                ReplicatedStorage.Remote.Server.OnGame.Voting.VoteRetry:FireServer()
+            end)
+        end
+    end
+end)
+
+-- Auto Next
+Tabs.Main:AddToggle("AutoNext", {
+    Title   = "Auto Next",
+    Default = false
+}):OnChanged(function(state)
+    _G.AutoNextEnabled = state
+end)
+
+RunService.Heartbeat:Connect(function()
+    if _G.AutoNextEnabled then
+        if localPlayer:FindFirstChild("Summon_Amount") then
+            for i = 1, 10 do
+                pcall(function()
+                    vim:SendMouseButtonEvent(0,0,0,true,game,0)
+                    vim:SendMouseButtonEvent(0,0,0,false,game,0)
+                end)
+                task.wait(0.5)
+            end
+            task.wait(0.1)
+            pcall(function()
+                ReplicatedStorage.Remote.Server.OnGame.Voting.VoteNext:FireServer()
+            end)
+        end
+    end
+end)
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local localPlayer = Players.LocalPlayer
+
+local connection
+
+Tabs.Main:AddToggle("AntiLag", { 
+    Title   = "Auto AntiLag",
+    Default = false
+}):OnChanged(function(state)
+    _G.AutoUpgradeMoney = state
+
+    if state then
+        connection = RunService.Stepped:Connect(function()
+            for _, child in ipairs(localPlayer:GetChildren()) do
+                if child.Name == "SavedToTeleport" then
+                    child:Destroy()
+                    print("Antilag")
+                end
+            end
+        end)
+    else
+        if connection then
+            connection:Disconnect()
+            connection = nil
+        end
+    end
+end)
+---HideName
+-- ช่องกรอกชื่อปลอม
+local FakeNameBox = Tabs.Main:AddInput("FakeNameInput", {
+    Title = "Fake Username",
+    Default = "แอดมินหัวควยกระจอก",
+    Placeholder = "พิมพ์ชื่อ Username ปลอม"
+})
+
+local FakeDisplayNameBox = Tabs.Main:AddInput("FakeDisplayNameInput", {
+    Title = "Fake Display Name",
+    Default = "แอดAnime Rangersx ลูกหรี่แม่ขายหี",
+    Placeholder = "พิมพ์ Display Name ปลอม"
+})
+
+-- เริ่ม Toggle
+Tabs.Main:AddToggle("Hide Name", {
+    Title = "Hide Name",
+    Default = false
+}):OnChanged(function(state)
+    _G.HideNameRunning = state
+
+    if state then
+        -- Delay 5 วินาทีก่อนเริ่ม
+        task.delay(0.5, function()
+
+            -- ดึงค่าที่ผู้ใช้กรอก
+            local fakeName = FakeNameBox.Value
+            local fakeDisplayName = FakeDisplayNameBox.Value
+
+            -- สร้าง Config ถ้ายังไม่มี
+            if not getgenv().Config then
+                getgenv().Config = {}
+            end
+            getgenv().Config.FakeName = fakeName
+            getgenv().Config.FakeDisplayName = fakeDisplayName
+
+            -- ดึงบริการและผู้เล่น
+            local players = game:GetService('Players')
+            local lp = players.LocalPlayer
+            local oldName = lp.Name
+            local oldDisplayName = lp.DisplayName
+
+            -- เปลี่ยนชื่อ
+            lp.Name = fakeName
+            lp.DisplayName = fakeDisplayName
+
+            -- ฟังก์ชันแก้ชื่อในข้อความ
+            local function processtext(text)
+                if string.find(text, oldName) then
+                    return string.gsub(text, oldName, fakeName)
+                elseif string.find(text, oldDisplayName) then
+                    return string.gsub(text, oldDisplayName, fakeDisplayName)
+                end
+                return text
+            end
+
+            -- แก้ GUI ที่มีอยู่
+            for _, v in ipairs(game:GetDescendants()) do
+                if v:IsA("TextBox") or v:IsA("TextLabel") or v:IsA("TextButton") then
+                    v.Text = processtext(v.Text)
+                    v.Changed:Connect(function()
+                        v.Text = processtext(v.Text)
+                    end)
+                end
+            end
+
+            -- แก้ GUI ใหม่ที่เพิ่มเข้ามา
+            game.DescendantAdded:Connect(function(descendant)
+                if descendant:IsA("TextBox") or descendant:IsA("TextLabel") or descendant:IsA("TextButton") then
+                    descendant.Text = processtext(descendant.Text)
+                    descendant.Changed:Connect(function()
+                        descendant.Text = processtext(descendant.Text)
+                    end)
+                end
+            end)
+
+        end)
+    end
+end)
+--FakeLevel
+local Players = game:GetService("Players")
+local localPlayer = Players.LocalPlayer
+
+local FakeLevelBox = Tabs.Main:AddInput("FakeLevelInput", {
+    Title = "Fake Level",
+    Placeholder = "ใส่เลเวลที่คุณต้องการ",
+    Default = "",
+    Callback = function(inputText)
+        if inputText ~= "" then
+            local playerName = localPlayer.Name
+            workspace.EvilMortyMC.Head.PlayerHeadGui.Level.Text = "Level " .. inputText
+        end
+    end
+})
+
+
+
+
+
+--Auto Event
+Tabs.Event:AddToggle("Auto Play Event", {
+    Title   = "Auto Event",
+    Default = false
+}):OnChanged(function(state)
+    _G.Event = state
+    if state then
+        task.spawn(function()
+            local player = game:GetService("Players").LocalPlayer
+            local playerName = player.Name  
+            local replicatedStorage = game:GetService("ReplicatedStorage")
+            local playerData = replicatedStorage:WaitForChild("Player_Data")
+            local collection = playerData:WaitForChild(playerName):WaitForChild("Collection")
+            local unitsFolder = player:WaitForChild("UnitsFolder")
+            local scrollingFrame = player.PlayerGui.HUD.InGame.UnitsManager.Main.Main.ScrollingFrame
+            local agentFolder = game.Workspace.Agent.Agent
+
+            while _G.Event do
+                -- รอจนกว่าจะมี Model อยู่ใน Agent
+                local hasModel = false
+                repeat
+                    hasModel = false
+                    for _, child in pairs(agentFolder:GetChildren()) do
+                        if child:IsA("Model") then
+                            hasModel = true
+                            break
+                        end
+                    end
+                    if not hasModel then
+                        task.wait(1)
+                    end
+                until hasModel or not _G.Event
+
+                if not _G.Event then break end
+
+                -- เริ่มนับ 30 วิ และอัพเกรดไปด้วย
+                local startTime = tick()
+                while tick() - startTime < 40 and _G.Event do
+                    -- อัปเกรดยูนิต
+                    for _, unitFrame in pairs(scrollingFrame:GetChildren()) do
+                        if unitFrame:IsA("TextButton") then
+                            local upgradeText = unitFrame:FindFirstChild("UpgradeText")
+                            if upgradeText and upgradeText:IsA("TextLabel") then
+                                if not upgradeText.Text:match("%(MAX%)") then
+                                    local remoteUpgrade = replicatedStorage.Remote.Server.Units.Upgrade
+                                    for _, unit in pairs(unitsFolder:GetChildren()) do
+                                        local unitUpgradeText = unit:FindFirstChild("UpgradeText")
+                                        if not (unitUpgradeText and unitUpgradeText:IsA("TextLabel") and unitUpgradeText.Text:match("%(MAX%)")) then
+                                            remoteUpgrade:FireServer(unit)
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                    task.wait(1)
+                end
+
+                -- ทำ Deployment และ Upgrade ซ้ำ
+                while _G.Event do
+                    local modelStillExists = false
+                    for _, child in pairs(agentFolder:GetChildren()) do
+                        if child:IsA("Model") then
+                            modelStillExists = true
+                            break
+                        end
+                    end
+
+                    if not modelStillExists then
+                        print("Boss ตายห่าแล้ว เริ่มกระบวนการใหม่...")
+                        break -- กลับไปเช็ค Model ใหม่
+                    end
+
+                    -- ทำ Deployment
+                    for _, unit in pairs(unitsFolder:GetChildren()) do
+                        local unitName = unit.Name
+                        local unitInstance = collection:FindFirstChild(unitName)
+                        if unitInstance then
+                            local args = { unitInstance }
+                            local remoteDeploy = replicatedStorage.Remote.Server.Units.Deployment
+                            remoteDeploy:FireServer(unpack(args))
+                            print("Deployment ของยูนิต:", unitName, "สำเร็จ (Loop)")
+                        else
+                            warn("ไม่พบ Unit ชื่อ: " .. unitName)
+                        end
+                    end
+
+                    -- อัปเกรดยูนิต
+                    for _, unitFrame in pairs(scrollingFrame:GetChildren()) do
+                        if unitFrame:IsA("TextButton") then
+                            local upgradeText = unitFrame:FindFirstChild("UpgradeText")
+                            if upgradeText and upgradeText:IsA("TextLabel") then
+                                if not upgradeText.Text:match("%(MAX%)") then
+                                    local remoteUpgrade = replicatedStorage.Remote.Server.Units.Upgrade
+                                    for _, unit in pairs(unitsFolder:GetChildren()) do
+                                        local unitUpgradeText = unit:FindFirstChild("UpgradeText")
+                                        if not (unitUpgradeText and unitUpgradeText:IsA("TextLabel") and unitUpgradeText.Text:match("%(MAX%)")) then
+                                            remoteUpgrade:FireServer(unit)
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+
+                    task.wait(1)
+                end
+            end
+        end)
+    else
+        print("Auto Event disabled.")
+    end
+end)
+-- Dropdown: เลือกประเภทไข่
+Tabs.Event:AddDropdown("Dropdown", {
+    Title   = "Choose Egg",
+    Values  = {"Egg Capsule"},
+    Multi   = false,
+    Default = 1,
+    Callback = function(Value)
+        EggType = Value
+    end
+})
+
+-- Slider: เลือกจำนวนรอบ
+Tabs.Event:AddSlider("Slider", {
+    Title       = "How many eggs do you want?",
+    Description = "เลือกจำนวนรอบ",
+    Default     = 1,
+    Min         = 1,
+    Max         = 1000,
+    Rounding    = 0,
+    Callback    = function(Value)
+        UpgradeAmount = Value
+    end
+})
+Tabs.Event:AddButton({
+        Title = "Buy Egg",
+        Callback = function()
+           for i = 1, UpgradeAmount do
+            game:GetService("ReplicatedStorage"):WaitForChild("Remote"):WaitForChild("Server"):WaitForChild("Gameplay"):WaitForChild("EasterEgg"):FireServer(EggType, 1)
+            task.wait(0.2)
+        end
+        end
+    })
+    Tabs.Event:AddToggle("Auto Calim", {
+    Title   = "Auto Calim",
+    Default = false
+}):OnChanged(function(state)
+    _G.AutoStart = state
+    if state then
+        task.spawn(function()
+            while _G.AutoStart do
+                local prompt = workspace:WaitForChild("Lobby")
+                    :WaitForChild("HourlyEgg")
+                    :WaitForChild("Egg")
+                    :WaitForChild("ProximityPrompt")
+
+                if prompt then
+                    fireproximityprompt(prompt, 1)
+                end
+
+                task.wait(5) -- รอ 5 วินาทีก่อนทำซ้ำ ปรับตามที่ต้องการ
+            end
+        end)
+    end
+end)
+
+
+
+-- Auto Stage
+-- Auto Stage
+
+local preferredStages = {
+    {World = "Naruto",      Chapter = "Naruto_RangerStage1"},
+    {World = "Namek",       Chapter = "Namek_RangerStage1"},
+    {World = "OnePiece",    Chapter = "OnePiece_RangerStage1"},
+    {World = "DemonSlayer", Chapter = "DemonSlayer_RangerStage1"},
+    {World = "OPM",         Chapter = "OPM_RangerStage1"},
+}
+
+local Toggle = Tabs.Stage:AddToggle("AutoStageChallenge", {
+    Title   = "Auto Stage+Challenge",
+    Default = _G.AutoStageChallenge,
+    Flag    = "AutoStageChallenge",
+    Save    = true,
+})
+
+Toggle:OnChanged(function(state)
+    _G.AutoStageChallenge = state
+    local running = state
+
+    if state then
+        local Players           = game:GetService("Players")
+        local localPlayer       = Players.LocalPlayer
+        local ReplicatedStorage = game:GetService("ReplicatedStorage")
+        local remote            = ReplicatedStorage:WaitForChild("Remote"):WaitForChild("Server"):WaitForChild("PlayRoom"):WaitForChild("Event")
+
+        -- ฟังก์ชันในการส่งคำสั่งไปยัง Server
+        local function fire(args)
+            pcall(function()
+                remote:FireServer(unpack(args))
+            end)
+        end
+
+        -- ตั้งค่าและเข้า Stage (Create → Mode → World → Chapter → Submit → Start)
+        local function setStage(stage)
+            fire({[1] = "Create"});           wait(0.5)
+            fire({[1] = "Change-Mode",   [2] = {Mode = "Ranger Stage"}}); wait(0.5)
+            fire({[1] = "Change-World",  [2] = {World = stage.World}});      wait(0.5)
+            fire({[1] = "Change-Chapter",[2] = {Chapter = stage.Chapter}});   wait(0.5)
+            fire({[1] = "Submit"});         wait(0.5)
+            fire({[1] = "Start"});          wait(1.5)
+        end
+
+        -- ตรวจว่ามี "room created successfully!" ของผู้เล่นอื่นหรือไม่
+        local function hasOtherPlayerCreatedRoom()
+            local ui = game:GetService("CoreGui"):FindFirstChild("Fluent")
+                or localPlayer.PlayerGui:FindFirstChild("Fluent")
+            if not ui then return false end
+
+            for _, lbl in ipairs(ui:GetDescendants()) do
+                if lbl:IsA("TextLabel") and lbl.Text:find("room created successfully!") then
+                    local parent = lbl.Parent
+                    if parent and parent:FindFirstChild("PlayerName") then
+                        local name = parent.PlayerName.Text
+                        if name ~= localPlayer.Name then
+                            print("✅ เจอห้องจากผู้เล่นอื่น:", name)
+                            return true
+                        end
+                    end
+                end
+            end
+
+            return false
+        end
+
+        -- อ่านโหมดเกมจาก HUD
+        local function getGameMode()
+            local gui = localPlayer.PlayerGui
+                :WaitForChild("HUD")
+                :WaitForChild("InGame")
+                :WaitForChild("Main")
+                :WaitForChild("GameInfo")
+                :WaitForChild("Gamemode")
+                :WaitForChild("Label")
+            return gui.Text
+        end
+
+        -- สร้าง ChallengeRoom และเริ่มเกมทันที
+        local function createAndStartChallengeRoom()
+            print("🎯 สร้าง ChallengeRoom และเริ่มเกมทันที")
+            fire({[1] = "Create", [2] = {CreateChallengeRoom = true}}) 
+            wait(1)
+            fire({[1] = "Start"})
+        end
+
+        -- ฟังก์ชันตรวจสอบว่าอยู่ในโหมด Challenge หรือไม่
+        local function isInChallengeMode()
+            local mode = getGameMode()
+            return mode == "Challenge"
+        end
+
+        task.spawn(function()
+            while running do
+                local mode = getGameMode()
+                print("🎮 Gamemode Label Text:", mode)
+
+                if mode == "Ranger Stage" then
+                    -- ถ้าอยู่ในโหมด Ranger Stage → ไม่ต้องทำอะไรเลย
+                    print("🛑 อยู่ในโหมด Ranger Stage — ไม่ทำอะไรเลย")
+                    wait(1)
+                    continue
+
+                elseif mode == "Challenge" then
+                    -- ถ้าเป็นโหมด Challenge → เช็ค Stage ทั้ง 5 ซ้ำ ๆ
+                    print("🔍 โหมด Challenge — ตรวจสอบ preferred stages")
+
+                    while running do
+                        if not isInChallengeMode() then
+                            break
+                        end
+                        for _, stage in ipairs(preferredStages) do
+                            if not running then break end
+                            print("▶️ ตรวจสอบ Stage:", stage.World)
+                            setStage(stage)
+                            if hasOtherPlayerCreatedRoom() then
+                                print("✅ พบห้องในโหมด Challenge ที่ Stage:", stage.World)
+                                -- เข้าเล่น Stage นี้ แล้วหยุด loop
+                                break
+                            end
+                            wait(1)
+                        end
+                    end
+
+                else
+                    -- โหมดอื่น ๆ → สร้าง ChallengeRoom & Start ตามปกติ
+                    print("✅ โหมดไม่ใช่ Ranger Stage/Challenge — สร้างห้องใหม่")
+                    createAndStartChallengeRoom()
+                end
+
+                wait(1)
+            end
+        end)
+    end
+end)
+---Beta stage
+local preferredStages = {
+    {World = "Naruto",      Chapter = "Naruto_RangerStage1"},
+    {World = "Namek",       Chapter = "Namek_RangerStage1"},
+    {World = "OnePiece",    Chapter = "OnePiece_RangerStage1"},
+    {World = "DemonSlayer", Chapter = "DemonSlayer_RangerStage1"},
+    {World = "OPM",         Chapter = "OPM_RangerStage1"},
+}
+
+local Toggle = Tabs.Stage:AddToggle("AutoStage", {
+    Title   = "Auto Stage",
+    Default = _G.AutoStage,
+    Flag    = "AutoStage",
+    Save    = true,
+})
+
+Toggle:OnChanged(function(state)
+    _G.AutoStageChallenge = state
+    local running = state
+
+    if state then
+        local Players           = game:GetService("Players")
+        local localPlayer       = Players.LocalPlayer
+        local ReplicatedStorage = game:GetService("ReplicatedStorage")
+        local remote            = ReplicatedStorage:WaitForChild("Remote"):WaitForChild("Server"):WaitForChild("PlayRoom"):WaitForChild("Event")
+
+        -- ฟังก์ชันในการส่งคำสั่งไปยัง Server
+        local function fire(args)
+            pcall(function()
+                remote:FireServer(unpack(args))
+            end)
+        end
+
+        -- ตั้งค่าและเข้า Stage (Create → Mode → World → Chapter → Submit → Start)
+        local function setStage(stage)
+            fire({[1] = "Create"});               wait(0.5)
+            fire({[1] = "Change-Mode",    [2] = {Mode = "Ranger Stage"}}); wait(0.5)
+            fire({[1] = "Change-World",   [2] = {World = stage.World}});   wait(0.5)
+            fire({[1] = "Change-Chapter", [2] = {Chapter = stage.Chapter}}); wait(0.5)
+            fire({[1] = "Submit"});              wait(0.5)
+            fire({[1] = "Start"});               wait(1.5)
+        end
+
+        -- อ่านโหมดเกมจาก HUD
+        local function getGameMode()
+            local gui = localPlayer.PlayerGui
+                :WaitForChild("HUD")
+                :WaitForChild("InGame")
+                :WaitForChild("Main")
+                :WaitForChild("GameInfo")
+                :WaitForChild("Gamemode")
+                :WaitForChild("Label")
+            return gui.Text
+        end
+
+        task.spawn(function()
+            while running do
+                local mode = getGameMode()
+                print("🎮 Gamemode Label Text:", mode)
+
+                if mode == "Ranger Stage" then
+                    -- ถ้าอยู่ในโหมด Ranger Stage → ไม่ต้องทำอะไรเลย
+                    print("🛑 อยู่ในโหมด Ranger Stage — ไม่ทำอะไรเลย")
+                else
+                    -- ถ้าไม่ใช่ Ranger Stage → สุ่ม Stage จาก preferredStages ไปเรื่อย ๆ
+                    print("🔁 เริ่มตรวจสอบ preferred stages")
+                    for _, stage in ipairs(preferredStages) do
+                        if not running then break end
+                        print("▶️ เข้าสู่ Stage:", stage.World)
+                        setStage(stage)
+                        wait(1)
+                    end
+                end
+
+                wait(1)
+            end
+        end)
+    end
+end)
+
+
+
+
+
+
+
+
+-- ===== Summon Tab =====
+Tabs.Summon:AddParagraph({
+    Title   = "STANDARD BANNER",
+    Content = "This is a paragraph.\nSecond line!"
+})
+local Slider = Tabs.Summon:AddSlider("Slider", {
+    Title = "Choose",
+    Description = "want how many",
+    Default = 1,
+    Min = 1,
+    Max = 10,
+    Rounding = 0,
+    Callback = function(Value)
+        print("Slider value is:", Value)
+        -- Store the value for later use
+        _G.randomizationCount = Value
+    end
+})
+
+local Toggle = Tabs.Summon:AddToggle("MyToggle", {Title = "Summon Standard", Default = false })
+
+Toggle:OnChanged(function(State)
+    if State then
+        -- When the toggle is activated, proceed with the randomization based on slider value
+        print("Toggle activated. Randomizing", _G.randomizationCount, "times.")
+        
+        -- Define the args for the Gambling Remote call
+        local args = {
+            [1] = "x10",
+            [2] = "Standard",
+            [3] = {
+                ["Epic"] = true,
+                ["Legendary"] = true,
+                ["Rare"] = true
+            }
+        }
+
+        -- Fire the server event based on the slider value (randomizing multiple times)
+        for i = 1, _G.randomizationCount do
+            game:GetService("ReplicatedStorage"):WaitForChild("Remote"):WaitForChild("Server"):WaitForChild("Gambling"):WaitForChild("UnitsGacha"):FireServer(unpack(args))
+        end
+    else
+        print("Toggle deactivated. Randomization stopped.")
+    end
+end)
+local SummonSlider = Tabs.Summon:AddSlider("Slider", {
+    Title = "Choose",
+    Description = "Want how many",
+    Default = 1,
+    Min = 1,
+    Max = 10,
+    Rounding = 0,
+    Callback = function(Value)
+        print("Slider value is:", Value)
+        -- Store the value for later use
+        _G.summonCount = Value
+    end
+})
+
+local SummonToggle = Tabs.Summon:AddToggle("MyToggle", {Title = "Summon Rate", Default = false })
+
+SummonToggle:OnChanged(function(State)
+    if State then
+        -- When the toggle is activated, proceed with the randomization based on slider value
+        print("Toggle activated. Summoning", _G.summonCount, "times.")
+        
+        -- Define the args for the Gambling Remote call
+        local summonArgs = {
+            [1] = "x10",  -- Update this line as needed
+            [2] = "Rateup",  -- Change this to "Rateup" as requested
+            [3] = {
+                ["Epic"] = true,
+                ["Legendary"] = true,
+                ["Rare"] = true
+            }
+        }
+
+        -- Fire the server event based on the slider value (summoning multiple times)
+        for i = 1, _G.summonCount do
+            game:GetService("ReplicatedStorage"):WaitForChild("Remote"):WaitForChild("Server"):WaitForChild("Gambling"):WaitForChild("UnitsGacha"):FireServer(unpack(summonArgs))
+        end
+    else
+        print("Toggle deactivated. Summoning stopped.")
+    end
+end)
+
+
+-- ===== Code Tab =====
+Tabs.Code:AddParagraph({
+    Title   = "Code want Level 5 and Join Group and like game can use code!!!",
+    Content = "This is a paragraph.\nSecond line!"
+})
+Tabs.Code:AddButton({
+    Title    = "Code All",
+    Callback = function()
+        for _, code in ipairs({
+            "Easter Egg 2025!"
+        }) do
+            ReplicatedStorage.Remote.Server.Lobby.Code:FireServer(code)
+            task.wait(0.2)
+        end
+    end
+})
+Tabs.Code:AddButton({
+        Title = "Claim Level",
+        Description = "Very important button",
+        Callback = function()
+            local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local remote = ReplicatedStorage:WaitForChild("Remote"):WaitForChild("Server"):WaitForChild("Gameplay"):WaitForChild("LevelMilestone")
+
+-- เริ่มต้นที่ 5 และเพิ่มทีละ 5 ถึง 50 (เปลี่ยนตัวเลขตามต้องการ)
+for i = 5, 100, 5 do
+    local args = {
+        [1] = i
+    }
+    remote:FireServer(unpack(args))
+    wait(0.5) -- หน่วงเวลา 0.5 วินาที (ปรับได้) เพื่อไม่ให้ยิงเร็วเกิน
+end
+
+        end
+    })
+    local WebhookBox = Tabs.Code:AddInput("WebhookInput", {
+    Title = "Webhook URL",
+    Default = "",
+    Placeholder = "ใส่ Webhook URL ที่นี่"
+})
+
+local Toggle = Tabs.Code:AddToggle("MyToggle", {
+    Title = "Auto Check & Remove",
+    Default = false
+})
+
+local HttpService = game:GetService("HttpService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+-- ฟังก์ชันส่ง Discord
+local function sendToDiscord(webhookUrl, itemNames)
+    local message = "🧾 พบข้อความใน ItemsList และลบเรียบร้อย:\n"
+    for _, name in ipairs(itemNames) do
+        message = message .. "- " .. name .. "\n"
+    end
+
+    local data = {
+        ["content"] = message
+    }
+
+    local headers = {
+        ["Content-Type"] = "application/json"
+    }
+
+    local jsonData = HttpService:JSONEncode(data)
+
+    local request = http_request or request or (syn and syn.request) or (fluxus and fluxus.request) or (http and http.request)
+    if request and webhookUrl ~= "" then
+        request({
+            Url = webhookUrl,
+            Body = jsonData,
+            Method = "POST",
+            Headers = headers
+        })
+    end
+end
+
+-- เริ่ม loop เมื่อเปิด Toggle
+Toggle:OnChanged(function(state)
+    if state then
+        task.spawn(function()
+            while Toggle.Value do
+                local success, err = pcall(function()
+                    local itemsList = LocalPlayer:WaitForChild("PlayerGui"):WaitForChild("RewardsUI")
+                        .Main.LeftSide.Rewards.ItemsList
+
+                    local foundItems = {}
+
+                    for _, item in ipairs(itemsList:GetChildren()) do
+                        if item:IsA("TextButton") then
+                            table.insert(foundItems, item.Name)
+                            item:Destroy() -- ลบทันที
+                        end
+                    end
+
+                    if #foundItems > 0 then
+                        sendToDiscord(WebhookBox.Value, foundItems)
+                    end
+                end)
+
+                if not success then
+                    warn("เกิดข้อผิดพลาด:", err)
+                end
+
+                task.wait(1) -- เช็คทุก 1 วินาที
+            end
+        end)
+    end
+end)
+
+
+-- ===== Settings Tab: SaveManager & InterfaceManager =====
+SaveManager:SetLibrary(Fluent)
+InterfaceManager:SetLibrary(Fluent)
+
+-- ไม่บันทึกธีมใน config
+SaveManager:IgnoreThemeSettings()
+SaveManager:SetIgnoreIndexes({})
+
+-- กำหนดโฟลเดอร์สำหรับ config
+InterfaceManager:SetFolder("FluentScriptHub")
+SaveManager:SetFolder("FluentScriptHub/specific-game")
+
+-- โหลดค่า autosave ที่มีอยู่ (ก่อนสร้าง UI) เพื่อให้ค่าปรากฏใน UI ทันที
+local ok, err = SaveManager:Load("autosave")
+if ok then
+    Fluent:Notify({ Title = "Auto‑Load", Content = "Loaded saved settings.", Duration = 5 })
+end
+
+-- สร้างส่วนของ Settings UI
+InterfaceManager:BuildInterfaceSection(Tabs.Settings)
+SaveManager:BuildConfigSection(Tabs.Settings)
+
+-- ===== Auto‑Load & Auto‑Save Toggles =====
+local autoLoadToggle = Tabs.Settings:AddToggle("AutoLoadConfig", {
+    Title   = "Auto Load Config",
+    Default = ok  -- ถ้าโหลดสำเร็จก่อนหน้านี้ ให้เป็น true
+}):OnChanged(function(state)
+    if state then
+        local success, err2 = SaveManager:Load("autosave")
+        if success then
+            Fluent:Notify({ Title = "Auto‑Load", Content = "Loaded saved settings.", Duration = 5 })
+        else
+            Fluent:Notify({ Title = "Auto‑Load", Content = "No saved settings found.", Duration = 5 })
+        end
+    end
+end)
+Tabs.Settings:AddButton({
+    Title = "Auto Save Config",
+    Description = "Click to save your current settings.",
+    Callback = function()
+        local ok2, err3 = SaveManager:Save("autosave")
+        if ok2 then
+            Fluent:Notify({ Title = "Auto‑Save", Content = "Settings autosaved.", Duration = 5 })
+        else
+            Fluent:Notify({ Title = "Auto‑Save", Content = "Failed to save: "..err3, Duration = 5 })
+        end
+    end
+})
+
+
+
+
+
+-- ===== Hook on UI Close =====
+task.spawn(function()
+    repeat task.wait() until Fluent.Unloaded
+    SaveManager:Save("autosave")
+end)
+
+-- task.spawn(function()
+--     repeat task.wait() until Fluent.Unloaded
+--     if autoSaveToggle:Get() then
+--         SaveManager:Save("autosave")
+--     end
+-- end)
+
+-- เลือกแท็บแรกและแจ้งโหลดเสร็จ
+Window:SelectTab(1)
+Fluent:Notify({ Title = "Fluent", Content = "The script has been loaded.", Duration = 8 })
+----------GUIAFK
+-- สร้าง GUI
+local ba = Instance.new("ScreenGui")
+local ca = Instance.new("TextLabel")
+local da = Instance.new("Frame")
+local _b = Instance.new("TextLabel")
+local ab = Instance.new("TextLabel")
+local closeButton = Instance.new("TextButton") -- ปุ่มสำหรับปิด UI
+
+ba.Parent = game.CoreGui
+ba.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ca.Parent = ba
+ca.Active = true
+ca.BackgroundColor3 = Color3.new(0.176471, 0.176471, 0.176471)
+ca.Draggable = true
+ca.Position = UDim2.new(0.698610067, 0, 0.098096624, 0)
+ca.Size = UDim2.new(0, 370, 0, 52)
+ca.Font = Enum.Font.SourceSansSemibold
+ca.Text = "Anti Afk"
+ca.TextColor3 = Color3.new(0, 1, 1)
+ca.TextSize = 22
+
+da.Parent = ca
+da.BackgroundColor3 = Color3.new(0.196078, 0.196078, 0.196078)
+da.Position = UDim2.new(0, 0, 1.0192306, 0)
+da.Size = UDim2.new(0, 370, 0, 107)
+
+_b.Parent = da
+_b.BackgroundColor3 = Color3.new(0.176471, 0.176471, 0.176471)
+_b.Position = UDim2.new(0, 0, 0.800455689, 0)
+_b.Size = UDim2.new(0, 370, 0, 21)
+_b.Font = Enum.Font.Arial
+_b.Text = "God_BlackHole X"
+_b.TextColor3 = Color3.new(0, 1, 1)
+_b.TextSize = 20
+
+ab.Parent = da
+ab.BackgroundColor3 = Color3.new(0.176471, 0.176471, 0.176471)
+ab.Position = UDim2.new(0, 0, 0.158377, 0)
+ab.Size = UDim2.new(0, 370, 0, 44)
+ab.Font = Enum.Font.ArialBold
+ab.Text = "Status: Active"
+ab.TextColor3 = Color3.new(0, 1, 1)
+ab.TextSize = 20
+
+-- สร้างปุ่มปิด UI
+closeButton.Parent = ca
+closeButton.Position = UDim2.new(1, -40, 0, 0)  -- วางปุ่มที่มุมขวาบน
+closeButton.Size = UDim2.new(0, 40, 0, 40)
+closeButton.Text = "X"
+closeButton.Font = Enum.Font.SourceSansBold
+closeButton.TextColor3 = Color3.new(1, 0, 0)
+closeButton.TextSize = 24
+closeButton.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+
+-- ฟังก์ชันปิด UI
+closeButton.MouseButton1Click:Connect(function()
+    ba:Destroy()  -- ทำการลบ GUI เมื่อปุ่มถูกคลิก
+end)
+-- ป้องกัน AFK
+local bb = game:service'VirtualUser'
+game:service'Players'.LocalPlayer.Idled:connect(function()
+    bb:CaptureController()
+    bb:ClickButton2(Vector2.new())
+    ab.Text = "Roblox tried kicking you but I didn't let them!"
+    wait(2)
+    ab.Text = "Status : Active"
+end)
