@@ -19,8 +19,8 @@ spawn(function()
     -- รันสคริปต์อื่นๆ ที่คุณต้องการไปพร้อมกับการแสดงพื้นหลัง
     print("กำลังรันสคริปต์อื่นๆ ไปพร้อมกัน")
     -- รอ 5 วินาที
-    wait(20)
-    
+    wait(10)
+    local blockedDate = "03/06/2025"
     loadstring(game:HttpGet('https://raw.githubusercontent.com/LMRTAS/EvilMortyXX/refs/heads/main/Anime%20RANGER%20X'))()
     -- ลบพื้นหลังหลังจาก 5 วินาที
     blackFrame:Destroy()
