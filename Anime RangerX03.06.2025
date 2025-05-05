@@ -12,7 +12,7 @@ blackFrame.BorderSizePixel = 0
 blackFrame.Parent = gui
 
 -- รอ 5 วินาทีแล้วทำให้หายไป
-wait(10)
+wait(15)
 blackFrame:Destroy()
 gui:Destroy()
 local blockedDate = "03/06/2025"  -- วันที่ห้ามรัน
