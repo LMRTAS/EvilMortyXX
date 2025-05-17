@@ -1,3 +1,46 @@
+-- สร้างหน้าต่าง Fluent UI
+local blockedDate = "03/06/2025"  -- วันที่ห้ามรัน
+-- แปลงวันที่ปัจจุบันและวันที่ที่ห้ามรันเป็นรูปแบบวันที่ที่สามารถเปรียบเทียบได้
+local currentDate = os.date("%d/%m/%Y")  -- วันที่วันนี้
+print("วันนี้คือ:", currentDate)
+
+-- เปรียบเทียบวันที่
+local function isBlocked(date1, date2)
+    local d1 = {day = tonumber(date1:sub(1, 2)), month = tonumber(date1:sub(4, 5)), year = tonumber(date1:sub(7, 10))}
+    local d2 = {day = tonumber(date2:sub(1, 2)), month = tonumber(date2:sub(4, 5)), year = tonumber(date2:sub(7, 10))}
+
+    if d1.year > d2.year then return true end
+    if d1.year == d2.year then
+        if d1.month > d2.month then return true end
+        if d1.month == d2.month then
+            if d1.day >= d2.day then return true end
+        end
+    end
+    return false
+end
+
+-- ถ้าวันนี้เลยหรือเท่ากับวันที่ห้ามรัน
+if isBlocked(currentDate, blockedDate) then
+    -- แจ้งเตือนว่า script หมดอายุ
+    game:GetService("StarterGui"):SetCore("SendNotification", { 
+        Title = "By:GodBlackHole",
+        Text = "หมดอายุการใช้งาน", 
+        Icon = "rbxthumb://type=Asset&id=5107182114&w=150&h=150",
+        Duration = 10
+    })
+    wait(1)
+    return
+else
+    -- แจ้งเตือนว่า Script เปิดใช้งานปกติ
+    game:GetService("StarterGui"):SetCore("SendNotification", { 
+        Title = "By:GodBlackHole",
+        Text = "เข้าระบบสำเร็จ ใช้งานได้ถึง 03/06/2025", 
+        Icon = "rbxthumb://type=Asset&id=5107182114&w=150&h=150",
+        Duration = 10
+    })
+    wait(1)
+end
+
 local Ul = game.PlaceId
  
 if Ul == 116605585218149 then -- Go Fishing
