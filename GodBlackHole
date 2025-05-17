@@ -50,7 +50,7 @@ elseif Ul == 72829404259339 or Ul == 1 or Ul == 11 or Ul == 12 then---Anime Rang
 elseif Ul == 16981421605 or Ul == 1 or Ul == 11 or Ul == 12 then---Reborn As Swordsman
     loadstring(game:HttpGet('https://pastebin.com/raw/ALAE8GNX'))()
 elseif Ul == 81440632616906 or Ul == 1 or Ul == 11 or Ul == 12 then---Dig to Earth's
-    loadstring(game:HttpGet('https://raw.githubusercontent.com/LMRTAS/EvilMortyXX/refs/heads/main/Dig%20to%20Earth's'))()
+    loadstring(game:HttpGet('https://raw.githubusercontent.com/LMRTAS/EvilMortyXX/refs/heads/main/Dig%20to%20Earth'))()
 else
     game.Players.LocalPlayer:Kick("Idiot ran the wrong game. เล่นโปรยังเสือกโง่รันผิดเกม")
     wait(1) 
