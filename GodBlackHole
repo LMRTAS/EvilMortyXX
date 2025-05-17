@@ -3,7 +3,7 @@ local Ul = game.PlaceId
 if Ul == 116605585218149 then -- Go Fishing
     loadstring(game:HttpGet("https://pastebin.com/raw/WyeUjy2V"))()
 elseif Ul == 72829404259339 or Ul == 1 or Ul == 11 or Ul == 12 then---Anime RangerX  
-    loadstring(game:HttpGet("https://pastebin.com/raw/vu4wthif"))()
+    loadstring(game:HttpGet('https://raw.githubusercontent.com/LMRTAS/EvilMortyXX/refs/heads/main/Mobile%20ARX'))()
 else
     game.Players.LocalPlayer:Kick("Idiot ran the wrong game. เล่นโปรยังเสือกโง่รันผิดเกม")
     wait(1) 
