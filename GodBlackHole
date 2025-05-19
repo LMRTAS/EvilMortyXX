@@ -52,7 +52,10 @@ elseif Ul == 16981421605 or Ul == 1 or Ul == 11 or Ul == 12 then---Reborn As Swo
 elseif Ul == 81440632616906 or Ul == 1 or Ul == 11 or Ul == 12 then---Dig to Earth's
     loadstring(game:HttpGet('https://raw.githubusercontent.com/LMRTAS/EvilMortyXX/refs/heads/main/Dig%20to%20Earth'))()
 else
-    game.Players.LocalPlayer:Kick("Idiot ran the wrong game. เล่นโปรยังเสือกโง่รันผิดเกม")
-    wait(1) 
-    game:GetService("TeleportService"):Teleport(game.PlaceId, game:GetService("Players").LocalPlayer)
+game:GetService("StarterGui"):SetCore("SendNotification", { 
+        Title = "By:GodBlackHole",
+        Text = "เล่นโปรยังเสือกโง่รันผิดเกม", 
+        Icon = "rbxthumb://type=Asset&id=5107182114&w=150&h=150",
+        Duration = 10
+    })
 end
